@@ -2,7 +2,7 @@
 
 Use media assets to show your Ukraine support.
 
-## GitHub Banner (for repositories, profiles, and organizations)
+## GitHub banner (for repositories, profiles, and organizations)
 
 [![GitHub Profle](images/github-banner.svg)](https://standforukraine.com/)
 
@@ -12,31 +12,31 @@ Add a `README.md` file to your repo on your [profile](https://docs.github.com/en
 [![Stand With Ukraine](https://raw.githubusercontent.com/heyValdemar/ukraine-support-social-networks-assets/main/images/github-banner.svg)](https://standforukraine.com/)
 ```
 
-## Facebook Cover Photo
+## Facebook cover photo
 
 ![Facebook Cover](images/facebook-cover.png)
 
-## Instagram Square Post / Facebook Profile Photo
+## Instagram square post / Facebook profile photo
 
 ![Instagram Square Post](images/instagram-post.png)
 
-## Instagram Rectangular Post / Facebook Profile Photo
+## Instagram rectangular post / Facebook profile photo
 
 ![Instagram Rectangular Post](images/instagram-post-rectangular.png)
 
-## Facebook Post
+## Facebook post
 
 ![Facebook Post](images/facebook-post.png)
 
-## Instagram Story
+## Instagram story
 
 ![Instagram Story](images/instagram-story.png)
 
-## Twitter Header
+## Twitter header
 
 ![Twitter Header](images/twitter-header.png)
 
-## Linkedin Cover
+## Linkedin cover
 
 ![LinkedIn Cover](images/linkedin-cover.png)
 
