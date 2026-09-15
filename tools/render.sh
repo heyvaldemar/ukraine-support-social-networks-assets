@@ -20,6 +20,13 @@ IMAGE="${RENDER_IMAGE:-zenika/alpine-chrome@sha256:eb3378c1ed0079f94db054a5fe1aa
 
 WORK="$(mktemp -d)"
 trap 'rm -rf "$WORK"' EXIT
+# The container runs as its own unprivileged user, not as whoever started it,
+# and mktemp -d gives the new directory mode 700. On Linux that is the whole
+# failure: the container cannot enter the directory it was handed, Chromium
+# never opens the page, and the screenshot that comes back is nothing at all.
+# Docker Desktop on macOS hides this, because its file sharing does not carry
+# ownership through, so it only shows up in CI.
+chmod 0777 "$WORK"
 
 fail=0
 while IFS=$'\t' read -r name svg png vec w h _use; do
@@ -29,13 +36,19 @@ while IFS=$'\t' read -r name svg png vec w h _use; do
     cat "$ROOT/$svg"
   } > "$WORK/$name.html"
 
+  chmod 0644 "$WORK/$name.html"
+  # Keep the renderer's own words. Sending them to /dev/null turns every
+  # failure into the same empty answer, and an empty answer is the one kind of
+  # result that cannot tell you what to fix.
   docker run --rm -v "$WORK:/w" "$IMAGE" \
     --no-sandbox --headless --disable-gpu --hide-scrollbars \
     --force-device-scale-factor=1 --virtual-time-budget=4000 \
-    --window-size="$w,$h" --screenshot="/w/$name.png" "file:///w/$name.html" >/dev/null 2>&1
+    --window-size="$w,$h" --screenshot="/w/$name.png" "file:///w/$name.html" \
+    >"$WORK/$name.out" 2>&1
 
   if [ ! -s "$WORK/$name.png" ]; then
-    echo "render failed: $name produced no image" >&2
+    echo "render failed: $name produced no image. The renderer said:" >&2
+    sed 's/^/    /' "$WORK/$name.out" >&2
     fail=1
     continue
   fi

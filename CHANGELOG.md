@@ -40,7 +40,13 @@ every one of them.
 - **A renderer pinned by digest.** `zenika/alpine-chrome@sha256:eb3378c1ed00…`,
   in a container, because a local Chrome, a local Inkscape and a local
   `rsvg-convert` disagree about font substitution and the disagreement is
-  invisible until two files that should match do not.
+  invisible until two files that should match do not. Both scripts that drive
+  it widen the temporary directory they hand it and keep its stderr: the
+  container runs as its own unprivileged user, `mktemp -d` gives mode 700, and
+  on Linux the renderer therefore cannot enter the directory it was given.
+  Docker Desktop does not carry ownership through and hides this completely,
+  so the first run that saw it was a CI run, and all it could say was that
+  nothing came back.
 - **[`tests/assets-are-what-they-claim.sh`](tests/assets-are-what-they-claim.sh)**:
   130 assertions, no dependencies beyond `bash` and `python3`. It decodes every
   published PNG and checks the dimensions against the README table, that the

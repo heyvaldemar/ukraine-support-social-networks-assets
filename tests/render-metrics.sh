@@ -34,6 +34,12 @@ TOLERANCE=0.02   # ems. The measurement is deterministic for a given image, so
 
 WORK="$(mktemp -d)"
 trap 'rm -rf "$WORK"' EXIT
+# mktemp -d gives mode 700, and the container runs as its own unprivileged
+# user rather than as whoever started it. On Linux it therefore cannot enter
+# the directory it was handed. Docker Desktop on macOS does not carry
+# ownership through and hides this entirely, so the first run that saw it was
+# a CI run.
+chmod 0777 "$WORK"
 
 python3 - "$WORK/measure.html" <<'PY'
 import json
@@ -62,13 +68,19 @@ document.getElementById("out").textContent = JOBS.map(([key, text, weight, famil
 </script></body>""")
 PY
 
-measured="$(docker run --rm -v "$WORK:/w" "$IMAGE" \
+chmod 0644 "$WORK/measure.html"
+# The renderer's own output is kept rather than discarded. Sent to /dev/null,
+# every possible failure here arrives as the same empty string, and an empty
+# string cannot say which one happened.
+docker run --rm -v "$WORK:/w" "$IMAGE" \
   --no-sandbox --headless --disable-gpu --virtual-time-budget=4000 \
-  --dump-dom file:///w/measure.html 2>/dev/null \
-  | sed -n '/<pre/,/<\/pre>/p' | sed 's/<[^>]*>//g')"
+  --dump-dom file:///w/measure.html >"$WORK/dom" 2>"$WORK/err"
+measured="$(sed -n '/<pre/,/<\/pre>/p' "$WORK/dom" | sed 's/<[^>]*>//g')"
 
 if [ -z "$measured" ]; then
-  echo "the renderer returned nothing; is docker running?"
+  echo "the renderer measured nothing. It said:"
+  sed 's/^/    /' "$WORK/err"
+  echo "  and returned $(wc -c <"$WORK/dom") bytes of document."
   exit 1
 fi
 
