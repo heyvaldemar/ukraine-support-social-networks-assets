@@ -1,0 +1,35 @@
+name: Verify
+
+# WHAT THERE IS TO VERIFY HERE. This repository has no deployment to boot, so
+# there is no smoke test to gate a change on. What a Dependabot update actually
+# edits is a workflow file, and an unparseable workflow is the way one of those
+# bumps can break something. So the check is a workflow linter, and the
+# automerge beside it waits for this to pass.
+#
+# A check proportional to the change, rather than none at all or a ceremony.
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: verify-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  lint:
+    name: Lint workflow YAML
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: actionlint
+        run: |
+          docker run --rm -v "$PWD:/mnt" -w /mnt rhysd/actionlint:1.7.12 -color
