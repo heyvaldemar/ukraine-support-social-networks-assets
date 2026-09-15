@@ -1,12 +1,18 @@
 name: Verify
 
-# WHAT THERE IS TO VERIFY HERE. This repository has no deployment to boot, so
-# there is no smoke test to gate a change on. What a Dependabot update actually
-# edits is a workflow file, and an unparseable workflow is the way one of those
-# bumps can break something. So the check is a workflow linter, and the
-# automerge beside it waits for this to pass.
+# WHAT THERE IS TO VERIFY HERE. This repository publishes pictures, so the
+# thing that can break is a picture: a file that is not the size the README
+# says it is, a render that silently produced a blank frame, a colour that
+# drifted off the flag, a destination that stopped matching the one beside it.
+# None of that shows up in a diff, because the diff of a PNG is noise.
 #
-# A check proportional to the change, rather than none at all or a ceremony.
+# So the checks read the published files rather than the changes to them. The
+# fast suite decodes every image and compares it against the generator and the
+# README; the metrics suite asks the renderer whether the type measurements the
+# whole layout is built on are still true. One takes a second, the other takes
+# about a minute, and this repository sees a handful of runs a month, which is
+# what makes running both on every push the cheap option rather than the
+# thorough one.
 on:
   push:
     branches: [main]
@@ -23,7 +29,7 @@ concurrency:
 
 jobs:
   lint:
-    name: Lint workflow YAML
+    name: Lint workflows, shell and Python
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -33,3 +39,35 @@ jobs:
       - name: actionlint
         run: |
           docker run --rm -v "$PWD:/mnt" -w /mnt rhysd/actionlint:1.7.12 -color
+
+      - name: ShellCheck
+        run: |
+          shellcheck --version
+          shellcheck tools/*.sh tests/*.sh
+
+      - name: Python syntax
+        run: |
+          python3 --version
+          python3 -m py_compile tools/*.py
+
+  claims:
+    name: The images are what the README says
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Check every published file against the generator and the README
+        run: tests/assets-are-what-they-claim.sh
+
+  metrics:
+    name: The renderer still measures what the layout assumes
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Re-measure the type inside the pinned renderer
+        run: tests/render-metrics.sh

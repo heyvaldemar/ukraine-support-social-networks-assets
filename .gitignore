@@ -1,0 +1,3 @@
+# py_compile, run by the lint job and by anyone checking the tools locally.
+__pycache__/
+*.pyc
